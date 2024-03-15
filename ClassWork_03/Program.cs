@@ -11,22 +11,41 @@ namespace ClassWork_03
     {
         static Mutex mutex = new Mutex(false);
 
+        static AutoResetEvent evnt = new AutoResetEvent(false);
+
         static void Main(string[] args)
         {
-            for (int i = 0; i < 4; i++)
+            // создаем именованный глобальный объект мьютекса
+            bool isCreate;
+            Mutex global = new Mutex(true, "MyGlobalMutex", out isCreate);
+            if (isCreate)
             {
-                Thread th = new Thread(() => { ThRoutine(null); });
-                th.Start();
+                Console.WriteLine("This is first run of programm");
             }
+            else
+            {
+                Console.WriteLine("Can not run one more copy of programm");
+                //return;
+                global.WaitOne();
+            }
+
+            for (int i = 0; i < 10; ++i)
+            {
+                ThreadPool.QueueUserWorkItem(ThRoutine, null);
+            }
+            evnt.Set();
 
             Console.ReadLine();
             Console.WriteLine("Main: Good bye...");
+            global.ReleaseMutex();
         }
 
         static void ThRoutine(object param)
         {
             int id = Thread.CurrentThread.ManagedThreadId;
-            mutex.WaitOne();
+            //mutex.WaitOne();
+            //mutex.WaitOne();
+            evnt.WaitOne();
 
             Console.WriteLine($"{id}: Thread is started");
 
@@ -42,7 +61,9 @@ namespace ClassWork_03
             Console.WriteLine($"{id}: Thread is exit");
 
             // Освободить мьютекс
-            mutex.ReleaseMutex();
+            //mutex.ReleaseMutex();
+            //mutex.ReleaseMutex();
+            evnt.Set();
         }
     }
 }
